@@ -1,5 +1,21 @@
 "use client";
 import { uploadToPinata, generateCertificateHTML } from '@/lib/pinata';
+import { convertCertificateToSvg } from '@/lib/certificate-converter';
+
+interface MintSBTArgs {
+  address: string;
+  name: string;
+  organization: string;
+  dateOfIssue: string;
+  ipfsHash: string;
+}
+
+interface CertificateMetadata {
+  name: string;
+  dateOfIssue: string;
+  image?: string;
+  [key: string]: any;
+}
 
 const useSBTApi = () => {
   const baseURL = "https://gateway-api.kalp.studio/v1/contract/kalp";
@@ -37,41 +53,23 @@ const useSBTApi = () => {
     date_of_issue: string
   ) => {
     try {
-      // Validate inputs
-      if (!recipientAddress || !user_name || !organization || !date_of_issue) {
-        throw new Error("Missing required parameters");
-      }
+      // Generate token ID
+      const tokenId = crypto.randomUUID();
 
-      console.log('Starting SBT minting process...', {
-        recipientAddress,
-        user_name,
-        organization,
-        date_of_issue
+      // Convert certificate to SVG
+      const svgCertificate = await convertCertificateToSvg({
+        name: user_name,
+        dateOfIssue: date_of_issue,
+        recipientAddress: recipientAddress
       });
 
-      // First, generate a unique token ID
-      const tokenId = crypto.randomUUID();
-      console.log('Generated token ID:', tokenId);
-      
-      // Generate HTML certificate
-      const certificateHTML = generateCertificateHTML(
-        user_name,
-        organization,
-        date_of_issue,
-        tokenId
-      );
-      console.log('Certificate HTML generated');
-
-      // Upload to Pinata
-      console.log('Uploading to Pinata...');
+      // Upload SVG to IPFS
       const ipfsHash = await uploadToPinata(
-        certificateHTML,
-        `certificate-${tokenId}.html`
+        svgCertificate,
+        `certificate-${tokenId}.svg`
       );
-      console.log('Pinata upload successful, IPFS hash:', ipfsHash);
 
       // Mint SBT with IPFS hash
-      console.log('Minting SBT...');
       const response = await fetch(
         `${baseURL}/invoke/elyxV7pvG3J19vDpU0MHQ6XORtJtiiZm1749037864224/MintSBT`,
         {
@@ -90,50 +88,25 @@ const useSBTApi = () => {
               organization: organization,
               dateOfIssue: date_of_issue,
               ipfsHash: ipfsHash
-            }
+            } as MintSBTArgs
           }),
         }
       );
 
-      console.log('Mint response status:', response.status);
-      const responseData = await response.json();
-      console.log('Mint response data:', responseData);
+      const mintResponse = await response.json();
 
-      if (!response.ok) {
-        throw new Error(`API Error: ${responseData.message || 'Failed to mint SBT'}`);
+      // If the minting was successful, ensure ipfsHash is part of the result for frontend display
+      if (mintResponse.status === "SUCCESS" && mintResponse.result) {
+        if (!mintResponse.result.result) {
+          mintResponse.result.result = {}; // Ensure result.result exists
+        }
+        mintResponse.result.result.ipfsHash = ipfsHash;
       }
 
-      if (responseData.status === "FAILURE") {
-        throw new Error(`Minting failed: ${responseData.error || 'Unknown error'}`);
-      }
-
-      if (!responseData.result) {
-        throw new Error('Invalid response format: missing result');
-      }
-
-      // Add the IPFS hash to the response
-      if (responseData.result && responseData.result.result) {
-        responseData.result.result.ipfsHash = ipfsHash;
-      }
-      
-      return responseData;
-    } catch (error: unknown) {
-      console.error('Error in mintSBT:', {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        cause: error instanceof Error ? error.cause : undefined,
-        response: error instanceof Error && 'response' in error ? error.response : undefined
-      });
-
-      // Enhance the error with more context
-      const enhancedError = new Error(
-        `Failed to mint SBT: ${error instanceof Error ? error.message : String(error)}`
-      );
-      if (error instanceof Error) {
-        enhancedError.cause = error;
-      }
-      throw enhancedError;
+      return mintResponse;
+    } catch (error) {
+      console.error('Error in minting process:', error);
+      throw error;
     }
   };
 
@@ -184,9 +157,43 @@ const useSBTApi = () => {
           }),
         }
       );
-      return await response.json();
+      const result = await response.json();
+      
+      if (result.result.success) {
+        // Parse the metadata string into an object
+        let parsedMetadata: CertificateMetadata = {
+          name: '',
+          dateOfIssue: ''
+        };
+        try {
+          if (result.result.result[2]) {
+            // For Holesky network
+            parsedMetadata = {
+              name: result.result.result[2][1],
+              dateOfIssue: result.result.result[2][3],
+              image: `https://ipfs.io/ipfs/${result.result.result[2][4]}` // Add IPFS URL for the SVG
+            };
+          } else {
+            // For other networks
+            const rawMetadata = JSON.parse(result.result.result.metadata);
+            parsedMetadata = {
+              ...rawMetadata,
+              image: `https://ipfs.io/ipfs/${rawMetadata.ipfsHash}`
+            };
+          }
+        } catch (parseError) {
+          console.error("Failed to parse metadata:", parseError);
+          return result;
+        }
+
+        // Update the result with parsed metadata
+        result.result.result.metadata = parsedMetadata;
+      }
+      
+      return result;
     } catch (error) {
       console.error("Error getting SBT by owner:", error);
+      throw error;
     }
   };
 
