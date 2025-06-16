@@ -23,6 +23,11 @@ const SENDER = 'demo_dapp';
 
 export async function POST(request: NextRequest) {
   try {
+    // Debug: Log environment variables (without exposing sensitive data)
+    console.log('API_URL:', API_URL);
+    console.log('API_KEY exists:', !!API_KEY);
+    console.log('SENDER:', SENDER);
+
     const notificationData: NotificationRequest = await request.json();
 
     if (!notificationData.eventName || !notificationData.emailContent || !notificationData.receiverIds) {
@@ -31,6 +36,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Debug: Log the request data
+    console.log('Sending notification request:', JSON.stringify(notificationData, null, 2));
 
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -41,14 +49,45 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(notificationData),
     });
-    console.log(response);
+
+    // Debug: Log response details
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to send notification');
+      // Get response text first to check if it's JSON or HTML
+      const responseText = await response.text();
+      console.log('Error response body:', responseText);
+
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      
+      try {
+        // Try to parse as JSON if possible
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorMessage;
+      } catch (parseError) {
+        // If it's not JSON (like HTML error page), use the status info
+        console.log('Response is not JSON, likely HTML error page');
+        errorMessage = `Server returned HTML instead of JSON. Status: ${response.status}`;
+      }
+
+      throw new Error(errorMessage);
     }
      
-    const data = await response.json();
-    return NextResponse.json(data);
+    // Get response text and try to parse as JSON
+    const responseText = await response.text();
+    console.log('Success response body:', responseText);
+
+    try {
+      const data = JSON.parse(responseText);
+      return NextResponse.json(data);
+    } catch (parseError) {
+      console.error('Failed to parse success response as JSON:', parseError);
+      return NextResponse.json({ 
+        message: 'Notification sent but response format was unexpected',
+        rawResponse: responseText 
+      });
+    }
 
   } catch (error) {
     console.error('Notification error:', error);
