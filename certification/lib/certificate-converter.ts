@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface CertificateData {
   name: string;
   dateOfIssue: string;

@@ -56,8 +56,8 @@ export default function AllSBTs() {
         } else {
           setError("Failed to fetch SBT IDs.");
         }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (err) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_err) {
         setError("An error occurred while fetching SBT IDs.");
       } finally {
         setLoading(false);
@@ -65,7 +65,7 @@ export default function AllSBTs() {
     };
 
     fetchTokenIDs();
-  }, []);
+  }, [getAllTokenIDs]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white">

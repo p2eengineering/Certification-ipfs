@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Certificate from "../../../components/Certificate/Certificate";
 import useSBTApi from "../../../../hooks/userSBT";
@@ -12,21 +12,15 @@ export default function OwnershipChecker() {
   const [ownership, setOwnership] = useState(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const network = params.network;
-    const address = params.address;
-    handleCheck(network, address);
-  }, []);
-
-  const handleCheck = async (network , owner) => {
+  const handleCheck = useCallback(async (network, owner) => {
     setOwnership(null);
     try {
       let response;
-        if (network === "Holesky") {
-          response = await getEVMSBTByOwner(owner);
-        } else {
-          response = await GetTokenMetadata(owner);
-        }
+      if (network === "Holesky") {
+        response = await getEVMSBTByOwner(owner);
+      } else {
+        response = await GetTokenMetadata(owner);
+      }
       if (response.result.success) {
         // Parse the metadata string into an object
         let parsedMetadata = {};
@@ -39,8 +33,9 @@ export default function OwnershipChecker() {
           } else {
             parsedMetadata = JSON.parse(response.result.result.metadata);
           }
-        } catch (parseError) {
-          setError("Failed to parse metadata.", parseError);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_parseError) {
+          setError("Failed to parse metadata.");
           return;
         }
 
@@ -53,10 +48,17 @@ export default function OwnershipChecker() {
       } else {
         setError("No certificate found for this owner.");
       }
-    } catch (err) {
-      setError("An error occurred while checking ownership.", err);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
+      setError("An error occurred while checking ownership.");
     }
-  };
+  }, [GetTokenMetadata, getEVMSBTByOwner]);
+
+  useEffect(() => {
+    const network = params.network;
+    const address = params.address;
+    handleCheck(network, address);
+  }, [params.network, params.address, handleCheck]);
 
   return (
     <div>

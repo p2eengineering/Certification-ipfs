@@ -1,5 +1,6 @@
 // pages/index.js
 import Navbar from "../components/Navbar/Navbar";
+import Image from "next/image";
 
 export default function Dashboard() {
   return (
@@ -22,11 +23,12 @@ export default function Dashboard() {
             which uses soul bound token (SBT) Certify.
           </p>
           <div className="w-full flex justify-center items-center">
-            <img
+            <Image
               className="hidden md:block"
               src="/Certification.svg"
               alt="certificate"
-              style={{ height: 450, width: 450 }}
+              width={450}
+              height={450}
             />
           </div>
         </div>
@@ -77,7 +79,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div>
-          <img src="/KalpStudio.svg" className="w-44" alt="Kalp Studio Logo" />
+          <Image src="/KalpStudio.svg" className="w-44" alt="Kalp Studio Logo" width={176} height={176} />
         </div>
       </footer>
     </div>

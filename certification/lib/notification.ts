@@ -9,21 +9,20 @@ interface EmailContent {
     view_link: string;
 }
 
-interface NotificationRequest {
-    eventName: string;
-    emailContent: EmailContent;
-    receiverIds: ReceiverInfo[];
-}
-
-export async function sendNotification(emailContent: EmailContent, receiverInfo: ReceiverInfo) {
+export async function sendNotification(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _emailContent: EmailContent, 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _receiverInfo: ReceiverInfo
+) {
     // NOTIFICATION SERVICE TEMPORARILY DISABLED
     // To re-enable: uncomment the code below and ensure environment variables are set
     
     /*
-    const notificationData: NotificationRequest = {
+    const notificationData = {
       eventName: 'SuccessfulMint',
-      emailContent,
-      receiverIds: [receiverInfo],
+      emailContent: _emailContent,
+      receiverIds: [_receiverInfo],
     };
   
     console.log('Sending notification request:', notificationData);

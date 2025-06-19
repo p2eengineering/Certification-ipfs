@@ -65,7 +65,8 @@ export async function POST(request: NextRequest) {
         // Try to parse as JSON if possible
         const errorData = JSON.parse(responseText);
         errorMessage = errorData.message || errorMessage;
-      } catch (parseError) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_parseError) {
         // If it's not JSON (like HTML error page), use the status info
         console.log('Response is not JSON, likely HTML error page');
         errorMessage = `Server returned HTML instead of JSON. Status: ${response.status}`;

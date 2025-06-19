@@ -1,6 +1,7 @@
 "use client"
 import Link from "next/link";
 import React from "react";
+import Image from "next/image";
 import {  Shield, Cigarette , BlocksIcon} from "lucide-react";
 import Navbar from "./components/Navbar/Navbar";
 
@@ -34,9 +35,11 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="hidden md:block">
-            <img
+            <Image
               src="/Certification.svg"
               alt="certificate"
+              width={600}
+              height={600}
               className="w-full max-w-lg mx-auto transform hover:scale-105 transition-transform duration-300"
             />
           </div>
@@ -84,7 +87,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="md:w-1/3 mt-8 md:mt-0">
-              <img src="/KalpStudio.svg" alt="Kalp Studio Logo" className="w-48 mx-auto" />
+              <Image src="/KalpStudio.svg" alt="Kalp Studio Logo" width={192} height={192} className="w-48 mx-auto" />
             </div>
           </div>
         </div>

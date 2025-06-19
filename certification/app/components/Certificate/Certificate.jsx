@@ -1,4 +1,5 @@
 import React, { forwardRef } from "react";
+import Image from "next/image";
 
 const Certificate = forwardRef((props, ref) => {
   const { 
@@ -86,9 +87,11 @@ const Certificate = forwardRef((props, ref) => {
 
         {/* Logo */}
         <div className="h-16 w-24">
-          <img
+          <Image
             src={logoSrc}
             alt="Certificate Logo"
+            width={96}
+            height={64}
             className="h-full w-full object-contain"
           />
         </div>
